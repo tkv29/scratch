@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { getSettings, updateSettings } from "../services/notes";
+import { getSettings, updateSettings, setWindowContentProtected, setWindowAlwaysOnTop, setWindowOpacity as setNativeWindowOpacity } from "../services/notes";
 import type {
   ThemeSettings,
   EditorFontSettings,
@@ -101,6 +101,12 @@ interface ThemeContextType {
   setCustomColor: (mode: "light" | "dark", key: ThemeColorKey, value: string) => void;
   resetCustomColor: (mode: "light" | "dark", key: ThemeColorKey) => void;
   resetAllCustomColors: (mode: "light" | "dark") => void;
+  windowOpacity: number;
+  setWindowOpacity: (opacity: number) => void;
+  privacyMode: boolean;
+  setPrivacyMode: (enabled: boolean) => void;
+  alwaysOnTop: boolean;
+  setAlwaysOnTop: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -173,6 +179,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   );
   const [customColorsLight, setCustomColorsLightState] = useState<CustomColors>({});
   const [customColorsDark, setCustomColorsDarkState] = useState<CustomColors>({});
+  const [windowOpacity, setWindowOpacityState] = useState(1.0);
+  const [privacyMode, setPrivacyModeState] = useState(false);
+  const [alwaysOnTop, setAlwaysOnTopState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
@@ -231,6 +240,19 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       }
       if (settings.customColorsDark) {
         setCustomColorsDarkState(settings.customColorsDark);
+      }
+      if (
+        typeof settings.windowOpacity === "number" &&
+        settings.windowOpacity >= 0.2 &&
+        settings.windowOpacity <= 1.0
+      ) {
+        setWindowOpacityState(settings.windowOpacity);
+      }
+      if (typeof settings.privacyMode === "boolean") {
+        setPrivacyModeState(settings.privacyMode);
+      }
+      if (typeof settings.alwaysOnTop === "boolean") {
+        setAlwaysOnTopState(settings.alwaysOnTop);
       }
     } catch {
       // If settings can't be loaded, use defaults
@@ -324,6 +346,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => cancelAnimationFrame(raf);
   }, [interfaceZoom]);
 
+  // Apply window opacity whenever it changes
+  useEffect(() => {
+    setNativeWindowOpacity(windowOpacity).catch((err) =>
+      console.error("Failed to set native window opacity:", err),
+    );
+  }, [windowOpacity]);
+
   // Save font settings to backend
   const saveFontSettings = useCallback(
     async (newFontSettings: Required<EditorFontSettings>) => {
@@ -364,6 +393,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setCustomEditorWidthPxState(DEFAULT_CUSTOM_WIDTH_PX);
     setCustomColorsLightState({});
     setCustomColorsDarkState({});
+    setWindowOpacityState(1.0);
     try {
       const settings = await getSettings();
       await updateSettings({
@@ -375,6 +405,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         customEditorWidthPx: undefined,
         customColorsLight: undefined,
         customColorsDark: undefined,
+        windowOpacity: undefined,
       });
     } catch (error) {
       console.error("Failed to reset editor settings:", error);
@@ -428,6 +459,39 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         console.error("Failed to save interface zoom:", error),
       );
   }, [interfaceZoom, isInitialized]);
+
+  // Save and set window opacity
+  const setWindowOpacity = useCallback((opacity: number) => {
+    const clamped = Math.round(Math.min(Math.max(opacity, 0.2), 1.0) * 20) / 20;
+    setWindowOpacityState(clamped);
+    getSettings()
+      .then((settings) => updateSettings({ ...settings, windowOpacity: clamped }))
+      .catch((err) => console.error("Failed to save window opacity:", err));
+  }, []);
+
+  // Save and set always on top
+  const setAlwaysOnTop = useCallback(async (enabled: boolean) => {
+    setAlwaysOnTopState(enabled);
+    try {
+      await setWindowAlwaysOnTop(enabled);
+      const settings = await getSettings();
+      await updateSettings({ ...settings, alwaysOnTop: enabled });
+    } catch (err) {
+      console.error("Failed to set always on top:", err);
+    }
+  }, []);
+
+  // Save and set privacy mode (screen sharing protection)
+  const setPrivacyMode = useCallback(async (enabled: boolean) => {
+    setPrivacyModeState(enabled);
+    try {
+      await setWindowContentProtected(enabled);
+      const settings = await getSettings();
+      await updateSettings({ ...settings, privacyMode: enabled });
+    } catch (err) {
+      console.error("Failed to set privacy mode:", err);
+    }
+  }, []);
 
   // Set custom width in px (persists to settings)
   const setCustomEditorWidthPx = useCallback(async (px: number) => {
@@ -550,6 +614,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         setCustomColor,
         resetCustomColor,
         resetAllCustomColors,
+        windowOpacity,
+        setWindowOpacity,
+        privacyMode,
+        setPrivacyMode,
+        alwaysOnTop,
+        setAlwaysOnTop,
       }}
     >
       {children}

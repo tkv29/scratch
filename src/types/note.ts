@@ -59,6 +59,9 @@ export interface Settings {
   ignoredPatterns?: string[];
   customColorsLight?: CustomColors;
   customColorsDark?: CustomColors;
+  windowOpacity?: number;
+  privacyMode?: boolean;
+  alwaysOnTop?: boolean;
 }
 
 export interface FolderNode {

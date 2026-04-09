@@ -11,17 +11,21 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { useNotes } from "../../context/NotesContext";
+import { useTheme } from "../../context/ThemeContext";
 import { NoteList } from "../notes/NoteList";
 import { Footer } from "./Footer";
 import { IconButton, Input } from "../ui";
 import {
   PlusIcon,
+  MinusIcon,
   XIcon,
   SearchIcon,
   SearchOffIcon,
   AddNoteIcon,
   FolderPlusIcon,
   NoteIcon,
+  PinIcon,
+  EyeIcon,
 } from "../icons";
 import { mod, shift, isMac } from "../../lib/platform";
 import * as notesService from "../../services/notes";
@@ -43,6 +47,8 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
     moveNote,
     moveFolder,
   } = useNotes();
+  const { windowOpacity, setWindowOpacity, alwaysOnTop, setAlwaysOnTop } = useTheme();
+  const [opacityMenuOpen, setOpacityMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState(searchQuery);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
@@ -312,7 +318,57 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
     >
     <div className="relative w-64 h-full bg-bg-secondary border-r border-border flex flex-col select-none">
       {/* Drag region */}
-      <div className="h-11 shrink-0" data-tauri-drag-region></div>
+      <div className="h-11 shrink-0 flex items-center justify-end pr-1" data-tauri-drag-region>
+        <DropdownMenu.Root open={opacityMenuOpen} onOpenChange={setOpacityMenuOpen}>
+          <DropdownMenu.Trigger asChild>
+            <IconButton
+              title={`Window Opacity: ${Math.round(windowOpacity * 100)}%`}
+              variant={windowOpacity < 1.0 ? "secondary" : "ghost"}
+            >
+              <EyeIcon className="w-4 h-4 stroke-[1.5]" />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className="bg-bg border border-border rounded-md shadow-lg p-2 z-50"
+              align="end"
+              sideOffset={4}
+            >
+              <DropdownMenu.Item
+                onSelect={(e) => e.preventDefault()}
+                className="flex items-center gap-1.5 outline-none"
+              >
+                <IconButton
+                  size="xs"
+                  onClick={() => setWindowOpacity(Math.max(0.2, windowOpacity - 0.05))}
+                  disabled={windowOpacity <= 0.2}
+                  title="Decrease opacity"
+                >
+                  <MinusIcon className="w-3.5 h-3.5" />
+                </IconButton>
+                <span className="text-xs tabular-nums w-8 text-center text-text">
+                  {Math.round(windowOpacity * 100)}%
+                </span>
+                <IconButton
+                  size="xs"
+                  onClick={() => setWindowOpacity(Math.min(1.0, windowOpacity + 0.05))}
+                  disabled={windowOpacity >= 1.0}
+                  title="Increase opacity"
+                >
+                  <PlusIcon className="w-3.5 h-3.5" />
+                </IconButton>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+        <IconButton
+          onClick={() => setAlwaysOnTop(!alwaysOnTop)}
+          title={alwaysOnTop ? "Disable Always on Top" : "Enable Always on Top"}
+          variant={alwaysOnTop ? "secondary" : "ghost"}
+        >
+          <PinIcon className="w-4 h-4 stroke-[1.5]" />
+        </IconButton>
+      </div>
       <div className="flex items-center justify-between pl-4 pr-3 pb-2 border-b border-border shrink-0">
         <div className="flex items-center gap-1">
           <div className="font-medium text-base">Notes</div>

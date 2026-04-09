@@ -77,6 +77,12 @@ export function AppearanceSettingsSection() {
     setCustomColor,
     resetCustomColor,
     resetAllCustomColors,
+    windowOpacity,
+    setWindowOpacity,
+    privacyMode,
+    setPrivacyMode,
+    alwaysOnTop,
+    setAlwaysOnTop,
   } = useTheme();
 
   // Validated numeric change handler
@@ -353,6 +359,36 @@ export function AppearanceSettingsSection() {
               </IconButton>
             </div>
           </div>
+
+          {/* Window Opacity */}
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-text font-medium">
+              Window Opacity
+            </label>
+            <div className="flex items-center gap-1 w-40">
+              <IconButton
+                variant="outline"
+                size="md"
+                onClick={() => setWindowOpacity(windowOpacity - 0.05)}
+                disabled={windowOpacity <= 0.2}
+                title="Decrease opacity"
+              >
+                <MinusIcon className="w-4 h-4" />
+              </IconButton>
+              <span className="text-sm font-medium tabular-nums flex-1 text-center">
+                {Math.round(windowOpacity * 100)}%
+              </span>
+              <IconButton
+                variant="outline"
+                size="md"
+                onClick={() => setWindowOpacity(windowOpacity + 0.05)}
+                disabled={windowOpacity >= 1.0}
+                title="Increase opacity"
+              >
+                <PlusIcon className="w-4 h-4" />
+              </IconButton>
+            </div>
+          </div>
         </div>
 
         {/* Preview */}
@@ -456,6 +492,61 @@ export function AppearanceSettingsSection() {
           </div>
           {/* Fade overlay - content to muted background */}
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-bg to-transparent pointer-events-none" />
+        </div>
+      </section>
+
+      {/* Privacy Section */}
+      <section className="pb-2">
+        <h2 className="text-xl font-medium mb-3">Window</h2>
+        <div className="rounded-[10px] border border-border divide-y divide-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div>
+              <p className="text-sm text-text font-medium">Always on Top</p>
+              <p className="text-sm text-text-muted mt-0.5">
+                Keep the window above all other windows
+              </p>
+            </div>
+            <div className="flex gap-2 p-1 rounded-[10px] border border-border">
+              <Button
+                onClick={() => setAlwaysOnTop(false)}
+                variant={!alwaysOnTop ? "primary" : "ghost"}
+                size="md"
+              >
+                Off
+              </Button>
+              <Button
+                onClick={() => setAlwaysOnTop(true)}
+                variant={alwaysOnTop ? "primary" : "ghost"}
+                size="md"
+              >
+                On
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <div>
+              <p className="text-sm text-text font-medium">Screen Sharing</p>
+              <p className="text-sm text-text-muted mt-0.5">
+                Hide app content from screen recording and sharing
+              </p>
+            </div>
+            <div className="flex gap-2 p-1 rounded-[10px] border border-border">
+              <Button
+                onClick={() => setPrivacyMode(false)}
+                variant={!privacyMode ? "primary" : "ghost"}
+                size="md"
+              >
+                Visible
+              </Button>
+              <Button
+                onClick={() => setPrivacyMode(true)}
+                variant={privacyMode ? "primary" : "ghost"}
+                size="md"
+              >
+                Hidden
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -107,6 +107,8 @@ import {
   MarkdownIcon,
   MarkdownOffIcon,
   FolderPlusIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "../icons";
 
 function formatDateTime(timestamp: number): string {
@@ -564,6 +566,8 @@ export function Editor({
   // Delay format bar / header transitions only when the sidebar needs to animate closed
   const needsSidebarDelay = focusMode && sidebarVisible;
   const isSidebarActive = sidebarVisible && !focusMode;
+  // Format bar visibility
+  const [showFormatBar, setShowFormatBar] = useState(true);
   // Source mode state
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceContent, setSourceContent] = useState("");
@@ -2354,13 +2358,24 @@ export function Editor({
               </IconButton>
             </Tooltip>
           )}
+          {currentNote && !sourceMode && (
+            <Tooltip content={showFormatBar ? "Hide toolbar" : "Show toolbar"}>
+              <IconButton onClick={() => setShowFormatBar((v) => !v)}>
+                {showFormatBar ? (
+                  <ChevronUpIcon className="w-4.25 h-4.25 stroke-[1.6]" />
+                ) : (
+                  <ChevronDownIcon className="w-4.25 h-4.25 stroke-[1.6]" />
+                )}
+              </IconButton>
+            </Tooltip>
+          )}
         </div>
       </div>
 
       {/* Format Bar – transition only after initial mount to avoid height animation on note load */}
       <div
         data-format-bar
-        className={`${focusMode || sourceMode ? "opacity-0 max-h-0 overflow-hidden pointer-events-none" : "opacity-100 max-h-20"} ${hasTransitioned ? `transition-all duration-400 ${needsSidebarDelay ? "delay-200" : ""}` : ""}`}
+        className={`${focusMode || sourceMode || !showFormatBar ? "opacity-0 max-h-0 overflow-hidden pointer-events-none" : "opacity-100 max-h-20"} ${hasTransitioned ? `transition-all duration-400 ${needsSidebarDelay ? "delay-200" : ""}` : ""}`}
       >
         <FormatBar
           editor={editor}

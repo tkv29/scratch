@@ -72,6 +72,22 @@ export async function updateSettings(settings: Settings): Promise<void> {
   return invoke("update_settings", { newSettings: settings });
 }
 
+export async function setWindowAlwaysOnTop(
+  alwaysOnTop: boolean,
+): Promise<void> {
+  return invoke("set_window_always_on_top", { alwaysOnTop });
+}
+
+export async function setWindowContentProtected(
+  protected_: boolean,
+): Promise<void> {
+  return invoke("set_window_content_protected", { protected: protected_ });
+}
+
+export async function setWindowOpacity(opacity: number): Promise<void> {
+  return invoke("set_window_opacity", { opacity });
+}
+
 export async function updateGitEnabled(
   enabled: boolean,
   expectedFolder: string,

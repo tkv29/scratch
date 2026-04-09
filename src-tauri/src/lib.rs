@@ -132,6 +132,12 @@ pub struct Settings {
     pub custom_colors_light: Option<std::collections::HashMap<String, String>>,
     #[serde(rename = "customColorsDark")]
     pub custom_colors_dark: Option<std::collections::HashMap<String, String>>,
+    #[serde(rename = "windowOpacity")]
+    pub window_opacity: Option<f64>,
+    #[serde(rename = "privacyMode")]
+    pub privacy_mode: Option<bool>,
+    #[serde(rename = "alwaysOnTop")]
+    pub always_on_top: Option<bool>,
 }
 
 // Search result
@@ -1740,6 +1746,52 @@ fn update_settings(
     let settings = state.settings.read().expect("settings read lock");
     save_settings(&folder, &settings).map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+#[tauri::command]
+fn set_window_always_on_top(
+    always_on_top: bool,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        window.set_always_on_top(always_on_top).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn set_window_content_protected(
+    protected: bool,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        window.set_content_protected(protected).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn set_window_opacity(
+    opacity: f64,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        #[cfg(target_os = "macos")]
+        {
+            use objc2_app_kit::NSWindow;
+            if let Ok(ns_window) = window.ns_window() {
+                unsafe {
+                    let ns_window = ns_window as *mut NSWindow;
+                    (*ns_window).setAlphaValue(opacity);
+                }
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            // window.set_opacity(opacity).ok();
+        }
+    }
     Ok(())
 }
 
@@ -3721,6 +3773,22 @@ pub fn run() {
                     //   for onboarding, even if a preview is also showing).
                     let _ = main_window.show();
                 }
+
+                // Apply privacy mode from saved settings
+                let (privacy_mode, always_on_top) = {
+                    let state = app.state::<AppState>();
+                    let settings = state.settings.read().expect("settings read lock");
+                    (
+                        settings.privacy_mode.unwrap_or(false),
+                        settings.always_on_top.unwrap_or(false),
+                    )
+                };
+                if privacy_mode {
+                    let _ = main_window.set_content_protected(true);
+                }
+                if always_on_top {
+                    let _ = main_window.set_always_on_top(true);
+                }
             }
 
             Ok(())
@@ -3755,6 +3823,9 @@ pub fn run() {
             move_folder,
             get_settings,
             update_settings,
+            set_window_always_on_top,
+            set_window_content_protected,
+            set_window_opacity,
             update_git_enabled,
             preview_note_name,
             write_file,
