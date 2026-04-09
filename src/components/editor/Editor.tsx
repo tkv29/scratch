@@ -21,6 +21,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import { TableKit } from "@tiptap/extension-table";
 import { Markdown } from "@tiptap/markdown";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import Highlight from "@tiptap/extension-highlight";
 import { lowlight } from "./lowlight";
 import { CodeBlockView } from "./CodeBlockView";
 import { Extension, InputRule } from "@tiptap/core";
@@ -109,6 +110,7 @@ import {
   FolderPlusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  HighlighterIcon,
 } from "../icons";
 
 function formatDateTime(timestamp: number): string {
@@ -252,6 +254,15 @@ interface FormatBarProps {
 
 // FormatBar must re-render with parent to reflect editor.isActive() state changes
 // (editor instance is mutable, so memo would cause stale active states)
+const HIGHLIGHT_COLORS = [
+  { color: "#fef08a", label: "Yellow" },
+  { color: "#bbf7d0", label: "Green" },
+  { color: "#bfdbfe", label: "Blue" },
+  { color: "#fecaca", label: "Red" },
+  { color: "#e9d5ff", label: "Purple" },
+  { color: "#fed7aa", label: "Orange" },
+];
+
 function FormatBar({
   editor,
   onAddLink,
@@ -259,6 +270,7 @@ function FormatBar({
   onAddImage,
 }: FormatBarProps) {
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const [highlightMenuOpen, setHighlightMenuOpen] = useState(false);
 
   if (!editor) return null;
 
@@ -285,6 +297,55 @@ function FormatBar({
       >
         <StrikethroughIcon className="w-4.5 h-4.5 stroke-[1.5]" />
       </ToolbarButton>
+      <DropdownMenu.Root
+        open={highlightMenuOpen}
+        onOpenChange={setHighlightMenuOpen}
+      >
+        <Tooltip content="Highlight text">
+          <DropdownMenu.Trigger asChild>
+            <ToolbarButton isActive={editor.isActive("highlight")}>
+              <HighlighterIcon className="w-4.5 h-4.5 stroke-[1.5]" />
+            </ToolbarButton>
+          </DropdownMenu.Trigger>
+        </Tooltip>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            className="p-2 bg-bg border border-border rounded-md shadow-lg z-50"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
+            <div className="flex gap-1.5">
+              {HIGHLIGHT_COLORS.map(({ color, label }) => (
+                <button
+                  key={color}
+                  title={label}
+                  className="w-6 h-6 rounded cursor-pointer border border-border/50 hover:scale-110 transition-transform"
+                  style={{ backgroundColor: color }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    editor
+                      .chain()
+                      .focus()
+                      .toggleHighlight({ color })
+                      .run();
+                    setHighlightMenuOpen(false);
+                  }}
+                />
+              ))}
+              <button
+                title="Remove highlight"
+                className="w-6 h-6 rounded cursor-pointer border border-border flex items-center justify-center text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  editor.chain().focus().unsetHighlight().run();
+                  setHighlightMenuOpen(false);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
 
       <div className="w-px h-4.5 border-l border-border mx-2" />
 
@@ -1113,6 +1174,7 @@ export function Editor({
         },
       }),
       Frontmatter,
+      Highlight.configure({ multicolor: true }),
       Markdown.configure({}),
       SearchHighlight.configure({
         matches: [],
