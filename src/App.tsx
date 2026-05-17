@@ -30,17 +30,20 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import * as aiService from "./services/ai";
 import type { AiProvider } from "./services/ai";
 
-// Detect preview mode from URL search params
+// Detect window mode from URL search params
 function getWindowMode(): {
   isPreview: boolean;
   previewFile: string | null;
+  initialNoteId: string | null;
 } {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get("mode");
   const file = params.get("file");
+  const note = params.get("note");
   return {
     isPreview: mode === "preview" && !!file,
     previewFile: file,
+    initialNoteId: mode === "editor" && !!note ? note : null,
   };
 }
 
@@ -75,6 +78,14 @@ function AppContent() {
   const [focusMode, setFocusMode] = useState(false);
   const [aiProvider, setAiProvider] = useState<AiProvider>("claude");
   const editorRef = useRef<TiptapEditor | null>(null);
+
+  // Keep window title in sync with the open note
+  useEffect(() => {
+    const title = currentNote?.title?.trim()
+      ? `${currentNote.title.trim()} — Scratch`
+      : "Scratch";
+    getCurrentWindow().setTitle(title).catch(console.error);
+  }, [currentNote]);
 
   // Listen for set-notes-folder event from CLI (scratch .)
   // Placed here in AppContent where both NotesContext and ThemeContext are available
@@ -631,7 +642,7 @@ function UpdateToast({
 }
 
 function App() {
-  const { isPreview, previewFile } = useMemo(getWindowMode, []);
+  const { isPreview, previewFile, initialNoteId } = useMemo(getWindowMode, []);
 
   // Cmd/Ctrl+W — close window (works in both preview and folder mode)
   useEffect(() => {
@@ -653,12 +664,12 @@ function App() {
     );
   }, []);
 
-  // Check for app updates on startup (folder mode only)
+  // Check for app updates on startup (main window only)
   useEffect(() => {
-    if (isPreview) return;
+    if (isPreview || initialNoteId) return;
     const timer = setTimeout(() => showUpdateToast(), 3000);
     return () => clearTimeout(timer);
-  }, [isPreview]);
+  }, [isPreview, initialNoteId]);
 
   // Preview mode: lightweight editor without sidebar, search, git
   if (isPreview && previewFile) {
@@ -677,7 +688,7 @@ function App() {
     <ThemeProvider>
       <Toaster />
       <TooltipProvider>
-        <NotesProvider>
+        <NotesProvider initialNoteId={initialNoteId}>
           <GitProvider>
             <AppContent />
           </GitProvider>

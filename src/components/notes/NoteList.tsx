@@ -20,6 +20,7 @@ import {
   PinIcon,
   CopyIcon,
   TrashIcon,
+  ExternalLinkIcon,
 } from "../icons";
 import type { Settings } from "../../types/note";
 
@@ -174,6 +175,14 @@ const NoteItemWithMenu = memo(function NoteItemWithMenu({
     }
   }, [id]);
 
+  const handleOpenInNewWindow = useCallback(async () => {
+    try {
+      await invoke("open_note_in_new_window", { noteId: id });
+    } catch (error) {
+      console.error("Failed to open note in new window:", error);
+    }
+  }, [id]);
+
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
@@ -194,6 +203,13 @@ const NoteItemWithMenu = memo(function NoteItemWithMenu({
           <ContextMenu.Item className={menuItemClass} onSelect={handlePin}>
             <PinIcon className="w-4 h-4 stroke-[1.6]" />
             {isPinned ? "Unpin" : "Pin"}
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            className={menuItemClass}
+            onSelect={handleOpenInNewWindow}
+          >
+            <ExternalLinkIcon className="w-4 h-4 stroke-[1.6]" />
+            Open in New Window
           </ContextMenu.Item>
           <ContextMenu.Item
             className={menuItemClass}

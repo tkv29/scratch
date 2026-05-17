@@ -671,8 +671,11 @@ export function Editor({
       const manager = editorInstance.storage.markdown?.manager;
       if (manager) {
         let markdown = manager.serialize(editorInstance.getJSON());
-        // Clean up nbsp entities that TipTap inserts (especially in table cells)
-        markdown = markdown.replace(/&nbsp;|&#160;/g, " ");
+        // Replace nbsp HTML entities with the actual non-breaking space character.
+        // The paragraph extension serializes empty paragraphs as "&nbsp;" and recognizes
+        // "\xA0" (non-breaking space) when parsing — so we must preserve this as \xA0,
+        // not a regular space, otherwise empty lines are lost when the note reloads.
+        markdown = markdown.replace(/&nbsp;|&#160;/g, "\xA0");
         return markdown;
       }
       // Fallback to plain text

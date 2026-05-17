@@ -56,7 +56,7 @@ interface NotesActionsContextValue {
 const NotesDataContext = createContext<NotesDataContextValue | null>(null);
 const NotesActionsContext = createContext<NotesActionsContextValue | null>(null);
 
-export function NotesProvider({ children }: { children: ReactNode }) {
+export function NotesProvider({ children, initialNoteId }: { children: ReactNode; initialNoteId?: string | null }) {
   const [notes, setNotes] = useState<NoteMetadata[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
@@ -608,6 +608,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           setNotes(notesList);
           // Start file watcher
           await notesService.startFileWatcher();
+          // Auto-select note when opened via "Open in New Window"
+          if (initialNoteId) {
+            await selectNote(initialNoteId);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to initialize");
@@ -616,6 +620,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       }
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Listen for file change events and notify if current note changed externally
